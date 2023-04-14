@@ -16,10 +16,13 @@
 		0B6C946029E94D5600A071EE /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B6C945F29E94D5600A071EE /* ContentView.swift */; };
 		0B6C946229E94D5600A071EE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0B6C946129E94D5600A071EE /* Assets.xcassets */; };
 		0B6C946529E94D5600A071EE /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0B6C946429E94D5600A071EE /* Preview Assets.xcassets */; };
+		0B7CF87B29E9A271008CEE89 /* VoiceLink.app in Resources */ = {isa = PBXBuildFile; fileRef = 0B6C944829E94D5500A071EE /* VoiceLink.app */; };
+		0BF4B1FF29E9617300AE6EED /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0BF4B1FD29E9616F00AE6EED /* AVFoundation.framework */; };
+		0BF4B20529E96B3100AE6EED /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0BF4B20329E96B2E00AE6EED /* Accelerate.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		0B6C945A29E94D5600A071EE /* PBXContainerItemProxy */ = {
+		0BC5F3A529E9B7C700CAC677 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 0B6C944029E94D5500A071EE /* Project object */;
 			proxyType = 1;
@@ -53,6 +56,12 @@
 		0B6C945F29E94D5600A071EE /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		0B6C946129E94D5600A071EE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		0B6C946429E94D5600A071EE /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		0B7CF87229E9A25B008CEE89 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS9.4.sdk/System/Library/Frameworks/Accelerate.framework; sourceTree = DEVELOPER_DIR; };
+		0B7CF87729E9A26B008CEE89 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS9.4.sdk/System/Library/Frameworks/AVFoundation.framework; sourceTree = DEVELOPER_DIR; };
+		0BC5F3A729E9C5D500CAC677 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
+		0BF4B1FD29E9616F00AE6EED /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.4.sdk/System/Library/Frameworks/AVFoundation.framework; sourceTree = DEVELOPER_DIR; };
+		0BF4B20329E96B2E00AE6EED /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.4.sdk/System/Library/Frameworks/Accelerate.framework; sourceTree = DEVELOPER_DIR; };
+		0BFA120129E9B2FA00A1C252 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -60,6 +69,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0BF4B1FF29E9617300AE6EED /* AVFoundation.framework in Frameworks */,
+				0BF4B20529E96B3100AE6EED /* Accelerate.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -76,9 +87,11 @@
 		0B6C943F29E94D5500A071EE = {
 			isa = PBXGroup;
 			children = (
+				0BC5F3A729E9C5D500CAC677 /* LICENSE */,
 				0B6C944A29E94D5500A071EE /* VoiceLink */,
 				0B6C945C29E94D5600A071EE /* VoiceLink Watch App */,
 				0B6C944929E94D5500A071EE /* Products */,
+				0BF4B1FC29E9616F00AE6EED /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -98,6 +111,7 @@
 				0B6C944D29E94D5500A071EE /* ContentView.swift */,
 				0B6C944F29E94D5600A071EE /* Assets.xcassets */,
 				0B6C945129E94D5600A071EE /* Preview Content */,
+				0BFA120129E9B2FA00A1C252 /* Info.plist */,
 			);
 			path = VoiceLink;
 			sourceTree = "<group>";
@@ -129,6 +143,17 @@
 			path = "Preview Content";
 			sourceTree = "<group>";
 		};
+		0BF4B1FC29E9616F00AE6EED /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				0B7CF87729E9A26B008CEE89 /* AVFoundation.framework */,
+				0BF4B20329E96B2E00AE6EED /* Accelerate.framework */,
+				0B7CF87229E9A25B008CEE89 /* Accelerate.framework */,
+				0BF4B1FD29E9616F00AE6EED /* AVFoundation.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -144,7 +169,7 @@
 			buildRules = (
 			);
 			dependencies = (
-				0B6C945B29E94D5600A071EE /* PBXTargetDependency */,
+				0BC5F3A629E9B7C700CAC677 /* PBXTargetDependency */,
 			);
 			name = VoiceLink;
 			productName = VoiceLink;
@@ -219,6 +244,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0B7CF87B29E9A271008CEE89 /* VoiceLink.app in Resources */,
 				0B6C946529E94D5600A071EE /* Preview Assets.xcassets in Resources */,
 				0B6C946229E94D5600A071EE /* Assets.xcassets in Resources */,
 			);
@@ -248,10 +274,10 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		0B6C945B29E94D5600A071EE /* PBXTargetDependency */ = {
+		0BC5F3A629E9B7C700CAC677 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 0B6C945729E94D5600A071EE /* VoiceLink Watch App */;
-			targetProxy = 0B6C945A29E94D5600A071EE /* PBXContainerItemProxy */;
+			targetProxy = 0BC5F3A529E9B7C700CAC677 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -438,12 +464,14 @@
 				DEVELOPMENT_TEAM = 66VP57PC8B;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VoiceLink/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = VoiceLink;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -471,12 +499,14 @@
 				DEVELOPMENT_TEAM = 66VP57PC8B;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VoiceLink/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = VoiceLink;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
