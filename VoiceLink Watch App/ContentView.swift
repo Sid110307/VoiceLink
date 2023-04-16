@@ -32,7 +32,9 @@ struct ContentView: View {
     @ObservedObject var sessionManager = SessionManager()
     @ObservedObject var audioPlayerDelegate = AudioPlayerDelegate()
     @State private var audioPlayer: AVAudioPlayer?
-    @State private var noAudioDataAlert = false
+    
+    @State private var showAlert = false
+    @State private var alertMessage = ""
     
     var body: some View {
         VStack(alignment: .center) {
@@ -48,7 +50,9 @@ struct ContentView: View {
                 .foregroundColor(.red)
                 .onTapGesture {
                     guard let data = self.sessionManager.receivedData else {
-                        noAudioDataAlert.toggle()
+                        alertMessage = "No audio data has been received.\nHas the iPhone sent audio?"
+                        showAlert.toggle()
+                        
                         print("No audio data received")
                         return
                     }
@@ -59,8 +63,8 @@ struct ContentView: View {
                         self.startPlaying(data: data)
                     }
                 }
-                .alert(isPresented: $noAudioDataAlert) {
-                    Alert(title: Text("Error"), message: Text("No audio data has been received.\nHas the iPhone sent audio?"), dismissButton: .default(Text("OK")))
+                .alert(isPresented: $showAlert) {
+                    Alert(title: Text("Error"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
                 }
             
             Text(audioPlayerDelegate.isPlaying ? "Playing..." : "Tap to play")
@@ -94,14 +98,21 @@ struct ContentView: View {
             audioPlayer?.delegate = audioPlayerDelegate
             
             guard let audioPlayer = audioPlayer else {
-                print("Failed to create audio player")
+                alertMessage = "Failed to create audio player."
+                showAlert.toggle()
+                
+                print("Failed to create audio player.")
                 return
             }
             
             audioPlayer.play()
             audioPlayerDelegate.isPlaying = true
         } catch {
+            alertMessage = "Failed to play audio: \(error.localizedDescription)"
+            showAlert.toggle()
+            
             print("Failed to play audio: \(error.localizedDescription)")
+            return
         }
     }
     

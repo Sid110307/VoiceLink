@@ -14,10 +14,12 @@ struct BulletedText: View {
     
     var body: some View {
         let items = self.text.components(separatedBy: "\n")
+        let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
         
         return VStack(alignment: .leading, spacing: 5) {
             ForEach(items, id: \.self) { item in
                 HStack(alignment: .top, spacing: 5) {
+                    Text(timestamp)
                     Text(self.bullet)
                     Text(item)
                 }
@@ -59,14 +61,46 @@ class WatchSessionManager: NSObject, WCSessionDelegate {
     func sessionDidDeactivate(_ session: WCSession) {
         print("WatchSessionManager: session deactivated")
     }
+    
+    func sendAudioData(_ data: Data, messageLog: inout [String]) {
+        guard WCSession.isSupported() else {
+            messageLog.append("WatchConnectivity is not supported on this device")
+            print("WatchConnectivity is not supported on this device")
+            
+            return
+        }
+        
+        let session = WCSession.default
+        
+        if !session.isPaired {
+            messageLog.append("Watch is not paired")
+            print("Watch is not paired")
+            
+            return
+        }
+        
+        var log = messageLog
+        
+        if session.isReachable {
+            session.sendMessageData(data, replyHandler: nil, errorHandler: { error in
+                log.append("Failed to send audio data to watch: \(error.localizedDescription)")
+                print("Failed to send audio data to watch: \(error.localizedDescription)")
+            })
+        } else {
+            log.append("Watch is not reachable")
+            print("Watch is not reachable")
+        }
+        
+        messageLog = log
+    }
 }
-
+    
 struct ContentView: View {
     @State private var isRecording = false
     @State private var messageLog = [String]()
     @State private var volumeLevel: Float = 1.0
-    
-    let watchSessionManager = WatchSessionManager(session: WCSession.default)
+
+    private var watchSessionManager = WatchSessionManager(session: WCSession.default)
     
     var body: some View {
         VStack(alignment: .center, spacing: 20) {
@@ -96,14 +130,6 @@ struct ContentView: View {
                 Text("Recording...")
                     .font(.title2)
                     .foregroundColor(.gray)
-                
-                HStack {
-                    Image(systemName: "speaker.3.fill")
-                        .font(.title2)
-                        .padding(.leading, 10)
-                    Slider(value: self.$volumeLevel, in: 0 ... 1)
-                        .padding(.trailing, 10)
-                }
             } else {
                 Image(systemName: "mic.circle")
                     .resizable()
@@ -179,76 +205,44 @@ struct ContentView: View {
     }
     
     func startRecording() {
-        let session = AVAudioSession.sharedInstance()
-        switch session.recordPermission {
-            case .granted:
-                self.messageLog.append("Microphone access is granted")
-                print("Microphone access is granted")
-            case .denied:
-                self.messageLog.append("Microphone access is denied")
-                print("Microphone access is denied")
-                
-                return
-            case .undetermined:
-                session.requestRecordPermission { granted in
-                    if !granted {
-                        self.messageLog.append("Microphone access is not granted")
-                        print("Microphone access is not granted")
-                        
-                        return
-                    }
-                }
-            @unknown default:
-                print("startRecording(): unknown error \(session.recordPermission)")
-        }
-        
-        let engine = AVAudioEngine()
-        let inputNode = engine.inputNode
-        let format = inputNode.inputFormat(forBus: 0)
+        let audioSession = AVAudioSession.sharedInstance()
+        self.isRecording = true
         
         do {
-            try session.setCategory(.record, mode: .default, options: [])
-            try session.setActive(true, options: [])
-            
-            DispatchQueue.main.async {
-                self.isRecording = true
-            }
-        } catch let error as NSError {
-            self.messageLog.append("Failed to set audio session category and activate session: \(error.localizedDescription)")
-            print("Failed to set audio session category and activate session: \(error.localizedDescription)")
-            
+            try audioSession.setCategory(.playAndRecord, mode: .default)
+            try audioSession.setActive(true, options: [])
+        } catch {
+            self.messageLog.append("Failed to set up audio recording: \(error.localizedDescription)")
+            print("Failed to set up audio recording: \(error.localizedDescription)")
+        }
+        
+        let audioRecorder = try! AVAudioRecorder(url: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("recording.wav"), settings: [
+            AVFormatIDKey: Int(kAudioFormatLinearPCM),
+            AVSampleRateKey: 44100.0,
+            AVNumberOfChannelsKey: 1,
+            AVEncoderBitRateKey: 16,
+            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+        ])
+        
+        audioRecorder.prepareToRecord()
+        audioRecorder.record()
+        
+        audioRecorder.isMeteringEnabled = true
+        let updateInterval: TimeInterval = 0.1
+        Timer.scheduledTimer(withTimeInterval: updateInterval, repeats: true) { _ in
+            audioRecorder.updateMeters()
+            let averagePower = audioRecorder.averagePower(forChannel: 0)
+            let percentage = pow(10, 0.05 * averagePower) * 100
+            self.volumeLevel = Float(percentage / 100)
+        }
+        
+        guard let audioData = FileManager.default.contents(atPath: audioRecorder.url.path) else {
+            self.messageLog.append("Failed to get audio data from recording")
+            print("Failed to get audio data from recording")
             return
         }
         
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
-            let channelCount = buffer.format.channelCount
-            let bufferLength = UInt32(buffer.frameLength)
-            let channels = UnsafeBufferPointer(start: buffer.floatChannelData, count: Int(channelCount))
-            let stride = buffer.stride
-            
-            var rms: Float = 0.0
-            vDSP_rmsqv(channels[0], stride, &rms, vDSP_Length(bufferLength))
-            
-            let volume = rms * 5.0
-            DispatchQueue.main.async {
-                self.volumeLevel = volume
-            }
-            
-            let data = Data(bytes: buffer.floatChannelData![0], count: Int(bufferLength * 4))
-            self.sendAudioData(data)
-        }
-        
-        do {
-            try engine.start()
-        } catch let error as NSError {
-            self.messageLog.append("Failed to start audio engine: \(error.localizedDescription)")
-            print("Failed to start audio engine: \(error.localizedDescription)")
-            
-            return
-        }
-        
-        self.messageLog.append("Started recording")
-        print("Started recording")
+        self.watchSessionManager.sendAudioData(audioData, messageLog: &self.messageLog)
     }
     
     func stopRecording() {
