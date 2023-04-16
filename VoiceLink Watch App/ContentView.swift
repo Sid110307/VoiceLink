@@ -1,39 +1,70 @@
 import AVFoundation
 import SwiftUI
 
+class AudioPlayerDelegate: NSObject, ObservableObject, AVAudioPlayerDelegate {
+    @Published var isPlaying = false
+    
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        isPlaying = false
+    }
+    
+    func audioPlayerBeginInterruption(_ player: AVAudioPlayer) {
+        player.pause()
+        isPlaying = false
+    }
+    
+    func audioPlayerEndInterruption(_ player: AVAudioPlayer, withOptions flags: Int) {
+        do {
+            try AVAudioSession.sharedInstance().setActive(true)
+            player.play()
+            isPlaying = true
+        } catch {
+            print("Failed to resume audio playback: \(error.localizedDescription)")
+        }
+    }
+}
+
 class SessionManager: ObservableObject {
     @Published var receivedData: Data?
 }
 
-final class ContentView: NSObject, View, AVAudioPlayerDelegate {
+struct ContentView: View {
     @ObservedObject var sessionManager = SessionManager()
-    @State private var isPlaying = false
+    @ObservedObject var audioPlayerDelegate = AudioPlayerDelegate()
     @State private var audioPlayer: AVAudioPlayer?
+    @State private var noAudioDataAlert = false
     
     var body: some View {
-        VStack(alignment: .center, spacing: 20) {
+        VStack(alignment: .center) {
             Text("VoiceLink")
-                .font(.largeTitle)
+                .font(.title)
                 .foregroundColor(.red)
-                .padding()
+                .padding(.top, 20)
             
-            Spacer()
-            
-            Image(systemName: isPlaying ? "speaker.wave.3.fill" : "speaker.wave.3")
+            Image(systemName: audioPlayerDelegate.isPlaying ? "speaker.wave.3.fill" : "speaker.wave.3")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 200, height: 200)
+                .frame(width: 75, height: 75)
                 .foregroundColor(.red)
                 .onTapGesture {
-                    if self.isPlaying {
+                    guard let data = self.sessionManager.receivedData else {
+                        noAudioDataAlert.toggle()
+                        print("No audio data received")
+                        return
+                    }
+                    
+                    if self.audioPlayerDelegate.isPlaying {
                         self.stopPlaying()
-                    } else if let data = self.sessionManager.receivedData {
+                    } else {
                         self.startPlaying(data: data)
                     }
                 }
+                .alert(isPresented: $noAudioDataAlert) {
+                    Alert(title: Text("Error"), message: Text("No audio data has been received.\nHas the iPhone sent audio?"), dismissButton: .default(Text("OK")))
+                }
             
-            Text(isPlaying ? "Playing..." : "Tap to play")
-                .font(.title2)
+            Text(audioPlayerDelegate.isPlaying ? "Playing..." : "Tap to play")
+                .font(.caption)
                 .foregroundColor(.gray)
             
             Spacer()
@@ -42,6 +73,9 @@ final class ContentView: NSObject, View, AVAudioPlayerDelegate {
                 .font(.footnote)
                 .foregroundColor(.gray)
                 .accentColor(.gray)
+                .fixedSize(horizontal: false, vertical: true)
+                .multilineTextAlignment(.center)
+                .padding()
         }
         .onDisappear {
             self.stopPlaying()
@@ -57,22 +91,23 @@ final class ContentView: NSObject, View, AVAudioPlayerDelegate {
             try data.write(to: fileUrl)
             
             audioPlayer = try AVAudioPlayer(contentsOf: fileUrl)
-            audioPlayer?.delegate = self
-            audioPlayer?.play()
-            isPlaying = true
+            audioPlayer?.delegate = audioPlayerDelegate
+            
+            guard let audioPlayer = audioPlayer else {
+                print("Failed to create audio player")
+                return
+            }
+            
+            audioPlayer.play()
+            audioPlayerDelegate.isPlaying = true
         } catch {
-            print("Failed to start playing audio: \(error.localizedDescription)")
+            print("Failed to play audio: \(error.localizedDescription)")
         }
     }
     
     func stopPlaying() {
         audioPlayer?.stop()
-        isPlaying = false
-    }
-
-    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        isPlaying = false
-        audioPlayer = nil
+        audioPlayerDelegate.isPlaying = false
     }
 }
 

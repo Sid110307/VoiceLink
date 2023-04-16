@@ -3,10 +3,70 @@ import AVFoundation
 import SwiftUI
 import WatchConnectivity
 
+struct BulletedText: View {
+    let text: String
+    let bullet: String
+    
+    init(_ text: String, bullet: String = "•") {
+        self.text = text
+        self.bullet = bullet
+    }
+    
+    var body: some View {
+        let items = self.text.components(separatedBy: "\n")
+        
+        return VStack(alignment: .leading, spacing: 5) {
+            ForEach(items, id: \.self) { item in
+                HStack(alignment: .top, spacing: 5) {
+                    Text(self.bullet)
+                    Text(item)
+                }
+            }
+        }
+    }
+}
+
+class WatchSessionManager: NSObject, WCSessionDelegate {
+    var session: WCSession
+    
+    init(session: WCSession = .default) {
+        self.session = session
+        super.init()
+        self.session.delegate = self
+        self.session.activate()
+    }
+    
+    func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
+        if let error = error {
+            print("WatchSessionManager: session activation failed with error: \(error.localizedDescription)")
+        } else {
+            print("WatchSessionManager: session activated with state: \(activationState.rawValue)")
+        }
+    }
+    
+    func session(_ session: WCSession, didReceiveMessageData messageData: Data) {
+        print("WatchSessionManager: received message data from watch")
+        print("WatchSessionManager: message data: \(messageData)")
+        
+        let audioPlayer = try? AVAudioPlayer(data: messageData)
+        audioPlayer?.play()
+    }
+    
+    func sessionDidBecomeInactive(_ session: WCSession) {
+        print("WatchSessionManager: session inactive")
+    }
+    
+    func sessionDidDeactivate(_ session: WCSession) {
+        print("WatchSessionManager: session deactivated")
+    }
+}
+
 struct ContentView: View {
     @State private var isRecording = false
     @State private var messageLog = [String]()
     @State private var volumeLevel: Float = 1.0
+    
+    let watchSessionManager = WatchSessionManager(session: WCSession.default)
     
     var body: some View {
         VStack(alignment: .center, spacing: 20) {
@@ -16,7 +76,7 @@ struct ContentView: View {
             
             Spacer()
             
-            if isRecording {
+            if self.isRecording {
                 Image(systemName: "mic.circle.fill")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
@@ -24,13 +84,13 @@ struct ContentView: View {
                     .foregroundColor(.red)
                     .overlay(
                         Circle()
-                            .stroke(Color.red, lineWidth: 2)
-                            .scaleEffect(1 + CGFloat(self.volumeLevel))
+                            .stroke(Color.red, lineWidth: 5)
+                            .scaleEffect(CGFloat(self.volumeLevel))
                             .opacity(Double(2 - self.volumeLevel))
                             .animation(Animation.easeOut(duration: 1), value: self.volumeLevel)
                     )
                     .onTapGesture {
-                        stopRecording()
+                        self.stopRecording()
                     }
                 
                 Text("Recording...")
@@ -38,9 +98,11 @@ struct ContentView: View {
                     .foregroundColor(.gray)
                 
                 HStack {
-                    Image(systemName: "speaker.fill")
+                    Image(systemName: "speaker.3.fill")
                         .font(.title2)
-                    Slider(value: $volumeLevel, in: 0 ... 1)
+                        .padding(.leading, 10)
+                    Slider(value: self.$volumeLevel, in: 0 ... 1)
+                        .padding(.trailing, 10)
                 }
             } else {
                 Image(systemName: "mic.circle")
@@ -49,76 +111,95 @@ struct ContentView: View {
                     .frame(width: 150, height: 150)
                     .foregroundColor(.red)
                     .onTapGesture {
-                        startRecording()
+                        self.startRecording()
                     }
                 
                 Text("Tap to start recording")
                     .font(.title2)
                     .foregroundColor(.gray)
+                    .multilineTextAlignment(.center)
             }
             
             Spacer()
             
-            ScrollView {
-                VStack(alignment: .leading, spacing: 10) {
-                    ForEach(messageLog, id: \.self) { message in
-                        Text(message)
-                            .font(.caption)
-                            .foregroundColor(.gray)
+            if self.messageLog.count > 0 {
+                Text("Message Log")
+                    .font(.title2)
+                    .foregroundColor(.gray)
+                
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 10) {
+                        ForEach(self.messageLog, id: \.self) { message in
+                            BulletedText(message)
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
                     }
                 }
+                .frame(height: 100)
             }
             
             Spacer()
             
             Text("[© 2023 Siddharth Praveen Bharadwaj](https://sid110307.github.io/Sid110307)")
                 .font(.footnote)
+                .font(.system(size: 8))
                 .foregroundColor(.gray)
+                .accentColor(.gray)
+                .multilineTextAlignment(.center)
         }
     }
     
     func sendAudioData(_ data: Data) {
         guard WCSession.isSupported() else {
-            messageLog.append("WatchConnectivity is not supported on this device")
+            self.messageLog.append("WatchConnectivity is not supported on this device")
+            print("WatchConnectivity is not supported on this device")
             return
         }
         
-        let message = ["audio": data]
-        WCSession.default.sendMessage(message, replyHandler: nil) { error in
-            DispatchQueue.main.async {
-                self.messageLog.append("Failed to send audio data: \(error.localizedDescription)")
-            }
+        let session = WCSession.default
+        self.messageLog.append("Watch connectivity is supported")
+        
+        if !session.isPaired {
+            self.messageLog.append("Watch is not paired")
+            print("Watch is not paired")
+            
+            return
         }
         
-        let userInfo = ["audioSent": true]
-        WCSession.default.transferUserInfo(userInfo)
+        if session.isReachable {
+            session.sendMessageData(data, replyHandler: nil, errorHandler: { error in
+                self.messageLog.append("Failed to send audio data to watch: \(error.localizedDescription)")
+                print("Failed to send audio data to watch: \(error.localizedDescription)")
+            })
+        } else {
+            self.messageLog.append("Watch is not reachable")
+            print("Watch is not reachable")
+        }
     }
     
     func startRecording() {
         let session = AVAudioSession.sharedInstance()
         switch session.recordPermission {
             case .granted:
-                break
+                self.messageLog.append("Microphone access is granted")
+                print("Microphone access is granted")
             case .denied:
-                DispatchQueue.main.async {
-                    self.messageLog.append("Microphone access is denied")
-                }
-                
+                self.messageLog.append("Microphone access is denied")
                 print("Microphone access is denied")
+                
                 return
             case .undetermined:
                 session.requestRecordPermission { granted in
                     if !granted {
-                        DispatchQueue.main.async {
-                            self.messageLog.append("Microphone access is not granted")
-                        }
-                        
+                        self.messageLog.append("Microphone access is not granted")
                         print("Microphone access is not granted")
+                        
                         return
                     }
                 }
             @unknown default:
-                break
+                print("startRecording(): unknown error \(session.recordPermission)")
         }
         
         let engine = AVAudioEngine()
@@ -133,11 +214,9 @@ struct ContentView: View {
                 self.isRecording = true
             }
         } catch let error as NSError {
-            DispatchQueue.main.async {
-                self.messageLog.append("Failed to set audio session category and activate session: \(error.localizedDescription)")
-            }
-            
+            self.messageLog.append("Failed to set audio session category and activate session: \(error.localizedDescription)")
             print("Failed to set audio session category and activate session: \(error.localizedDescription)")
+            
             return
         }
         
@@ -162,13 +241,14 @@ struct ContentView: View {
         do {
             try engine.start()
         } catch let error as NSError {
-            DispatchQueue.main.async {
-                self.messageLog.append("Failed to start audio engine: \(error.localizedDescription)")
-            }
-            
+            self.messageLog.append("Failed to start audio engine: \(error.localizedDescription)")
             print("Failed to start audio engine: \(error.localizedDescription)")
+            
             return
         }
+        
+        self.messageLog.append("Started recording")
+        print("Started recording")
     }
     
     func stopRecording() {
@@ -179,9 +259,10 @@ struct ContentView: View {
                 self.isRecording = false
             }
         } catch {
-            DispatchQueue.main.async {
-                self.messageLog.append("Failed to stop audio session: \(error.localizedDescription)")
-            }
+            self.messageLog.append("Failed to stop audio session: \(error.localizedDescription)")
+            print("Failed to stop audio session: \(error.localizedDescription)")
+            
+            return
         }
     }
 }
